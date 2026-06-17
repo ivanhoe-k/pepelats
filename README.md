@@ -6,7 +6,7 @@
 </p>
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.13+-3776AB?logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/version-0.1.0-orange" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.1.0a1-orange" alt="Version">
   <img src="https://img.shields.io/badge/status-experimental-yellow" alt="Status">
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License">
 </p>
