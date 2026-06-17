@@ -70,16 +70,14 @@ def _load_observability_config(
     *,
     service: ServiceConfig,
 ) -> ObservabilityConfig:
-    observability = configuration.try_get(
-        _ObservabilitySection,
-        section="observability",
+    section = (
+        configuration.try_get(_ObservabilitySection, section="observability")
+        or _ObservabilitySection()
     )
-    # Empty-string / env-fallback normalization is centralized in
-    # tracing.resolve_otlp_endpoint, called during configure_observability.
-    otlp_endpoint = observability.otlp_endpoint if observability else None
-
     return ObservabilityConfig(
         service=service,
         logging=configuration.get(LoggingConfig, section="logging"),
-        otlp_endpoint=otlp_endpoint,
+        enabled=section.enabled,
+        otlp_endpoint=section.otlp_endpoint,
+        export_timeout_seconds=section.export_timeout_seconds,
     )

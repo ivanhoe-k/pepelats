@@ -29,6 +29,7 @@ def configure_logging(
     *,
     resource: Resource,
     otlp_endpoint: str | None,
+    export_timeout_seconds: float,
 ) -> bool:
     numeric_level = getattr(logging, config.log_level)
     shared_processors = _shared_processors(service_context)
@@ -50,6 +51,7 @@ def configure_logging(
             otlp_endpoint,
             numeric_level,
             shared_processors,
+            export_timeout_seconds=export_timeout_seconds,
         )
         root_logger.addHandler(handler)
         otlp_logs_enabled = True

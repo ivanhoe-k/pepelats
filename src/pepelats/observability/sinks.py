@@ -48,12 +48,20 @@ def build_otlp_log_handler(
     otlp_endpoint: str,
     level: int,
     foreign_pre_chain: list[Any],
+    *,
+    export_timeout_seconds: float,
 ) -> tuple[logging.Handler, LoggerProvider]:
     # The OTLP logs signal: a LoggerProvider exports structured records over OTLP.
     # Keyed off the same endpoint as traces and metrics.
-    provider = LoggerProvider(resource=resource)
+    # shutdown_on_exit=False: the host lifecycle owns teardown; see tracing.py.
+    provider = LoggerProvider(resource=resource, shutdown_on_exit=False)
     provider.add_log_record_processor(
-        BatchLogRecordProcessor(OTLPLogExporter(endpoint=f"{otlp_endpoint}/v1/logs"))
+        BatchLogRecordProcessor(
+            OTLPLogExporter(
+                endpoint=f"{otlp_endpoint}/v1/logs",
+                timeout=export_timeout_seconds,
+            )
+        )
     )
     set_logger_provider(provider)
 

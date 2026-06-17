@@ -105,7 +105,12 @@ class WebHostBuilder:
             setup_http_container(app, container)
 
             server = self._host_config.server
-            return WebHost(app, bind=server.bind, port=server.port)
+            return WebHost(
+                app,
+                bind=server.bind,
+                port=server.port,
+                shutdown_timeout_seconds=self._host_config.shutdown_timeout_seconds,
+            )
         except Exception:
             shutdown_observability()
             raise

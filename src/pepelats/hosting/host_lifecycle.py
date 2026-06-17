@@ -51,7 +51,12 @@ async def run_host_lifecycle(
     finally:
         # After hosted services stop: dispose APP-scoped resources, then flush OTel.
         await container.close()
-        shutdown_observability()
+        # Run to completion off-loop. shutdown_observability joins every OTel worker
+        # thread, so once it returns no exporter activity remains — no post-shutdown
+        # "ghost" log lines. The flush is bounded at the source by the per-export
+        # timeout (ObservabilityConfig.export_timeout_seconds), never by abandoning
+        # it here; abandonment is what would leave a thread logging after shutdown.
+        await asyncio.to_thread(shutdown_observability)
 
 
 @asynccontextmanager

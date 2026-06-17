@@ -4,7 +4,6 @@ HTTP request spans come from the host's ASGI instrumentation middleware (transpo
 agnostic), so this module stays free of any web framework.
 """
 
-import os
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
@@ -26,14 +25,24 @@ def configure_tracing(
     otlp_endpoint: str | None,
     *,
     tracer_name: str,
+    export_timeout_seconds: float,
 ) -> bool:
     global _tracer_name, _tracer_provider
     _tracer_name = tracer_name
 
-    tracer_provider = TracerProvider(resource=resource)
+    # shutdown_on_exit=False: the host lifecycle owns teardown. Without this OTel
+    # also registers an atexit handler that re-runs shutdown on the main thread at
+    # interpreter exit — re-blocking on an unreachable collector after the host has
+    # already bounded and abandoned the flush.
+    tracer_provider = TracerProvider(resource=resource, shutdown_on_exit=False)
     if otlp_endpoint:
         tracer_provider.add_span_processor(
-            BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{otlp_endpoint}/v1/traces"))
+            BatchSpanProcessor(
+                OTLPSpanExporter(
+                    endpoint=f"{otlp_endpoint}/v1/traces",
+                    timeout=export_timeout_seconds,
+                )
+            )
         )
 
     _tracer_provider = tracer_provider
@@ -46,13 +55,6 @@ def shutdown_tracing() -> None:
     if _tracer_provider is not None:
         _tracer_provider.shutdown()
         _tracer_provider = None
-
-
-def resolve_otlp_endpoint(configured: str | None) -> str | None:
-    endpoint = configured or os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-    if endpoint == "":
-        return None
-    return endpoint
 
 
 @contextmanager

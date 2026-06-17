@@ -10,18 +10,31 @@ from opentelemetry.sdk.resources import Resource
 _meter_provider: MeterProvider | None = None
 
 
-def configure_metrics(resource: Resource, otlp_endpoint: str | None) -> bool:
+def configure_metrics(
+    resource: Resource,
+    otlp_endpoint: str | None,
+    *,
+    export_timeout_seconds: float,
+) -> bool:
     global _meter_provider
 
     readers: list[PeriodicExportingMetricReader] = []
     if otlp_endpoint:
         readers.append(
             PeriodicExportingMetricReader(
-                OTLPMetricExporter(endpoint=f"{otlp_endpoint}/v1/metrics")
+                OTLPMetricExporter(
+                    endpoint=f"{otlp_endpoint}/v1/metrics",
+                    timeout=export_timeout_seconds,
+                )
             )
         )
 
-    provider = MeterProvider(resource=resource, metric_readers=readers)
+    # shutdown_on_exit=False: the host lifecycle owns teardown; see tracing.py.
+    provider = MeterProvider(
+        resource=resource,
+        metric_readers=readers,
+        shutdown_on_exit=False,
+    )
     _meter_provider = provider
     metrics.set_meter_provider(provider)
     return otlp_endpoint is not None

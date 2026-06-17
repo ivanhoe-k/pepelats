@@ -6,6 +6,7 @@ same recorder to lock its position in the order.
 """
 
 import asyncio
+import time
 from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
 from typing import Any, cast
@@ -178,3 +179,22 @@ async def test_crashing_service_does_not_take_down_host_or_siblings(
     assert "serving" in events
     assert "stopped:sibling" in events
     assert events[-2:] == ["container_closed", "observability_shutdown"]
+
+
+async def test_observability_shutdown_runs_to_completion(
+    events: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Teardown waits for the full flush (no abandonment) so nothing keeps running
+    # — and logging — after the lifecycle returns.
+    def slow_shutdown() -> None:
+        time.sleep(0.1)
+        events.append("observability_shutdown")
+
+    monkeypatch.setattr(host_lifecycle, "shutdown_observability", slow_shutdown)
+    container = RecordingProvider(events)
+
+    async with run_host_lifecycle(container=container):
+        events.append("serving")
+
+    assert events == ["serving", "container_closed", "observability_shutdown"]

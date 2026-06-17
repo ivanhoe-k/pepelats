@@ -6,7 +6,9 @@ including local-override precedence — the one place real Dynaconf is in the lo
 
 from pathlib import Path
 
-from pepelats.configuration import load_configuration
+import pytest
+
+from pepelats.configuration import ConfigurationError, load_configuration
 from pepelats.hosting.host_bootstrap import load_host_bootstrap
 from pepelats.observability.logging_config import LoggingConfig
 
@@ -35,6 +37,7 @@ _LOCAL = """\
 environment = "local"
 
 [default.observability]
+enabled = true
 otlp_endpoint = "http://localhost:4318"
 """
 
@@ -61,6 +64,7 @@ def test_local_settings_override_base(tmp_path: Path) -> None:
     bootstrap = load_host_bootstrap(configuration)
 
     assert bootstrap.environment.name == "local"
+    assert bootstrap.observability.enabled is True
     assert bootstrap.observability.otlp_endpoint == "http://localhost:4318"
 
 
@@ -74,6 +78,28 @@ def test_bootstrap_maps_sections_to_typed_models(tmp_path: Path) -> None:
     assert bootstrap.service_config.instance_id  # generated per load
     assert bootstrap.host_config.server.port == 9000
     assert bootstrap.host_config.shutdown_timeout_seconds == 10.0
+    assert bootstrap.observability.export_timeout_seconds == 3.0
+
+
+def test_bootstrap_reads_export_timeout_override(tmp_path: Path) -> None:
+    base = _BASE.replace(
+        '[default.observability]\notlp_endpoint = ""\n',
+        '[default.observability]\notlp_endpoint = ""\nexport_timeout_seconds = 3.5\n',
+    )
+
+    bootstrap = load_host_bootstrap(load_configuration(_write(tmp_path, base)))
+
+    assert bootstrap.observability.export_timeout_seconds == 3.5
+
+
+def test_enabled_without_endpoint_is_rejected(tmp_path: Path) -> None:
+    base = _BASE.replace(
+        '[default.observability]\notlp_endpoint = ""\n',
+        '[default.observability]\nenabled = true\notlp_endpoint = ""\n',
+    )
+
+    with pytest.raises(ConfigurationError):
+        load_host_bootstrap(load_configuration(_write(tmp_path, base)))
 
 
 def test_bootstrap_generates_a_unique_instance_id(tmp_path: Path) -> None:

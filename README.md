@@ -57,6 +57,7 @@ bind = "127.0.0.1"
 port = 8000
 
 [default.observability]
+enabled = false
 otlp_endpoint = ""
 
 [default.greeting]
@@ -64,7 +65,7 @@ punctuation = "!"
 shout = false
 ```
 
-`service`, `logging`, `host`, and `observability` are required for host bootstrap. Leave `otlp_endpoint` empty to run without OTLP export.
+`service`, `logging`, `host`, and `observability` are required for host bootstrap. `enabled` is the OTLP export switch: `false` runs local-only (console/file logs, no collector); `true` requires a non-empty `otlp_endpoint` (an empty one is a config error, not a silent opt-out). `export_timeout_seconds` (default `3`) caps every OTLP export, including the final flush on shutdown — so an unreachable collector can't stall teardown. The flush runs to completion before the process exits, so shutdown leaves no straggling export logs.
 
 App-specific sections bind to Pydantic models. The section name defaults to the model name in snake_case (`GreetingConfig` → `greeting`). Register with `add_configuration`; services receive the config through constructor injection:
 
