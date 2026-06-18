@@ -1,7 +1,6 @@
 """Shared fixtures and test doubles for the pepelats suite.
 
-Target is pepelats only: nothing here imports socia_intelligence. Hosts and
-services under test are synthetic, defined in the tests themselves.
+Hosts and services under test are synthetic, defined in the tests themselves.
 """
 
 from collections.abc import Callable, Iterator

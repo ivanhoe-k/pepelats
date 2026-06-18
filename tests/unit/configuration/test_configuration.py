@@ -110,10 +110,10 @@ def test_get_value_raises_when_missing_and_no_default() -> None:
 
 def test_get_section_dict_coerces_to_dict() -> None:
     configuration = DynaconfConfiguration(
-        FakeSettings({"service": _ToDict({"name": "socia"})})
+        FakeSettings({"service": _ToDict({"name": "test-service"})})
     )
 
-    assert configuration.get_section_dict("service") == {"name": "socia"}
+    assert configuration.get_section_dict("service") == {"name": "test-service"}
 
 
 def test_get_preserves_dict_data_keys_while_binding_structural_fields() -> None:

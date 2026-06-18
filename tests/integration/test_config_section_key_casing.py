@@ -17,7 +17,7 @@ _BASE = """\
 environment = "Staging"
 
 [service]
-service_name = "socia-core"
+service_name = "test-service"
 service_version = "2.3.0"
 
 [logging]

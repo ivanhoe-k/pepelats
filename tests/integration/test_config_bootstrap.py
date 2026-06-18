@@ -21,7 +21,7 @@ _BASE = """\
 environment = "Staging"
 
 [service]
-service_name = "socia-core"
+service_name = "test-service"
 service_version = "2.3.0"
 
 [logging]
@@ -95,7 +95,7 @@ def test_staging_overlay_does_not_merge_local_file(
 def test_bootstrap_maps_sections_to_typed_models(tmp_path: Path) -> None:
     bootstrap = _load_bootstrap(_write(tmp_path, _BASE))
 
-    assert bootstrap.service_config.service_name == "socia-core"
+    assert bootstrap.service_config.service_name == "test-service"
     assert bootstrap.service_config.service_version == "2.3.0"
     assert bootstrap.service_config.instance_id
     assert bootstrap.host_config.server.port == 9000

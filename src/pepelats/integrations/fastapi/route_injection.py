@@ -25,10 +25,10 @@ from pepelats.dependency_injection.inject import injected_type
 from pepelats.hosting.http_di import request_services
 
 _REQUEST_PARAM = Parameter(
-    "__socia_request", kind=Parameter.KEYWORD_ONLY, annotation=Request
+    "__pepelats_request", kind=Parameter.KEYWORD_ONLY, annotation=Request
 )
 _WEBSOCKET_PARAM = Parameter(
-    "__socia_websocket", kind=Parameter.KEYWORD_ONLY, annotation=WebSocket
+    "__pepelats_websocket", kind=Parameter.KEYWORD_ONLY, annotation=WebSocket
 )
 
 
