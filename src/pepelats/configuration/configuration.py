@@ -4,16 +4,13 @@ A typed, source-agnostic view over loaded settings.
 """
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Any, cast
 
 from pydantic import BaseModel
 
-from pepelats.configuration.dynaconf_loader import get_dynaconf_settings
-
-
-class ConfigurationError(Exception):
-    pass
+from pepelats.configuration.errors import ConfigurationError
+from pepelats.configuration.section_coercion import validate_section
+from pepelats.configuration.section_names import default_section_name
 
 
 class Configuration(ABC):
@@ -63,7 +60,7 @@ class DynaconfConfiguration(Configuration):
     ) -> TConfig:
         configuration = self.try_get(model, section=section)
         if configuration is None:
-            section_name = section or _default_section_name(model)
+            section_name = section or default_section_name(model)
             msg = f"{section_name} is not configured"
             raise ConfigurationError(msg)
         return configuration
@@ -74,11 +71,11 @@ class DynaconfConfiguration(Configuration):
         *,
         section: str | None = None,
     ) -> TConfig | None:
-        section_name = section or _default_section_name(model)
+        section_name = section or default_section_name(model)
         section_data = self._read_section(section_name)
         if section_data is None:
             return None
-        return model.model_validate(section_data)
+        return validate_section(model, section_data)
 
     def get_section_dict(self, section: str) -> dict[str, Any]:
         section_data = self._read_section(section)
@@ -88,10 +85,7 @@ class DynaconfConfiguration(Configuration):
         return section_data
 
     def _read_section(self, section: str) -> dict[str, Any] | None:
-        value = getattr(self._inner, section, None)
-        if value is None:
-            value = self._inner.get(section)
-
+        value = self._inner.get(section)
         if value is None:
             return None
 
@@ -103,23 +97,3 @@ class DynaconfConfiguration(Configuration):
 
         msg = f"{section} is not a configuration section"
         raise ConfigurationError(msg)
-
-
-def load_configuration(config_dir: Path) -> Configuration:
-    return DynaconfConfiguration(get_dynaconf_settings(config_dir))
-
-
-def _default_section_name(model: type[BaseModel]) -> str:
-    name = model.__name__
-    if name.endswith("Config"):
-        name = name[: -len("Config")]
-    return _pascal_to_snake(name)
-
-
-def _pascal_to_snake(value: str) -> str:
-    chars: list[str] = []
-    for index, char in enumerate(value):
-        if char.isupper() and index > 0:
-            chars.append("_")
-        chars.append(char.lower())
-    return "".join(chars)

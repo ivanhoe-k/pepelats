@@ -48,7 +48,7 @@ class RequestCounter:
         return self._count
 
 
-# 3. Typed configuration — bound to the [default.greeting] TOML section by name.
+# 3. Typed configuration — bound to the [greeting] TOML section by name.
 class GreetingConfig(BaseModel):
     punctuation: str
     shout: bool
@@ -102,28 +102,25 @@ def register(services: ServiceCollection, configuration: Configuration) -> None:
 
 
 _APPSETTINGS = """\
-[default]
-environment = "local"
-
-[default.service]
+[service]
 service_name = "di-showcase"
 service_version = "1.0.0"
 
-[default.logging]
+[logging]
 log_level = "INFO"
 sinks = ["console"]
 
-[default.logging.console]
+[logging.console]
 json_logs = false
 
-[default.host]
+[host]
 bind = "127.0.0.1"
 port = 8099
 
-[default.observability]
+[observability]
 otlp_endpoint = ""
 
-[default.greeting]
+[greeting]
 punctuation = "!"
 shout = true
 """

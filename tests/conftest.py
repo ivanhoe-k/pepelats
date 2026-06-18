@@ -20,27 +20,44 @@ from pepelats.observability import shutdown_observability
 # Console-only, local-only settings: no file sink (keeps tmp dirs clean) and no OTLP
 # endpoint (no exporter touches the network during tests).
 _APPSETTINGS = """\
-[default]
-environment = "local"
-
-[default.service]
+[service]
 service_name = "test-service"
 service_version = "1.0.0"
 
-[default.logging]
+[logging]
 log_level = "INFO"
 sinks = ["console"]
 
-[default.logging.console]
+[logging.console]
 json_logs = false
 
-[default.host]
+[host]
 bind = "127.0.0.1"
 port = 8099
 
-[default.observability]
+[observability]
 otlp_endpoint = ""
 """
+
+
+_CONFIG_ENV_VARS = (
+    "ENVIRONMENT",
+    "HOST__PORT",
+    "HOST__SHUTDOWN_TIMEOUT_SECONDS",
+    "LOGGING__CONSOLE__JSON_LOGS",
+    "LOGGING__LOG_LEVEL",
+    "LOGGING__SINKS",
+    "MESSAGE_BUS__CHANNELS__0__NAME",
+    "MESSAGE_BUS__CHANNELS__0__CONTRACTS",
+    "MESSAGE_BUS__CHANNELS__0__DIRECTION",
+)
+
+
+@pytest.fixture(autouse=True)
+def isolate_process_config_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Tests must not depend on the developer shell's config env vars."""
+    for name in _CONFIG_ENV_VARS:
+        monkeypatch.delenv(name, raising=False)
 
 
 @pytest.fixture(autouse=True)

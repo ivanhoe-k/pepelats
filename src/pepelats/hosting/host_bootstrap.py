@@ -1,7 +1,9 @@
 """Single load path: configuration -> environment, service, host config, observability.
 
-Maps TOML sections to typed host models. The generic reader lives on Configuration;
-these are the host-specific bindings (which sections, how they nest).
+Maps configuration sections to typed host models. The generic reader lives on
+`Configuration`; these are the host-specific bindings (which sections, how they
+nest). The host environment name is resolved during configuration load and passed
+in explicitly.
 """
 
 import uuid
@@ -12,6 +14,7 @@ from pepelats.configuration import (
     Environment,
     ServiceConfig,
 )
+from pepelats.configuration.section_coercion import read_section_field, validate_section
 from pepelats.hosting.host_config import HostConfig
 from pepelats.hosting.server_config import ServerConfig
 from pepelats.observability.logging_config import LoggingConfig
@@ -30,38 +33,44 @@ class HostBootstrap:
     observability: ObservabilityConfig
 
 
-def load_host_bootstrap(configuration: Configuration) -> HostBootstrap:
+def load_host_bootstrap(
+    configuration: Configuration,
+    *,
+    environment: Environment,
+) -> HostBootstrap:
     service = _load_service_config(configuration)
 
     return HostBootstrap(
         configuration=configuration,
-        environment=_load_environment(configuration),
+        environment=environment,
         service_config=service,
         host_config=_load_host_config(configuration),
         observability=_load_observability_config(configuration, service=service),
     )
 
 
-def _load_environment(configuration: Configuration) -> Environment:
-    return Environment(name=configuration.get_value("environment", default="local"))
-
-
 def _load_service_config(configuration: Configuration) -> ServiceConfig:
     service = configuration.get_section_dict("service")
-    return ServiceConfig.model_validate(
+    return validate_section(
+        ServiceConfig,
         {
             **service,
             "instance_id": str(uuid.uuid4()),
-        }
+        },
     )
 
 
 def _load_host_config(configuration: Configuration) -> HostConfig:
     host_dict = configuration.get_section_dict("host")
-    # ServerConfig owns its own keys (bind/port); shutdown lives on HostConfig.
+    # Flat [host] maps bind/port into ServerConfig; other HostConfig fields bind here.
     return HostConfig(
-        server=ServerConfig.model_validate(host_dict),
-        shutdown_timeout_seconds=host_dict.get("shutdown_timeout_seconds", 10.0),
+        server=validate_section(ServerConfig, host_dict),
+        shutdown_timeout_seconds=read_section_field(
+            host_dict,
+            HostConfig,
+            "shutdown_timeout_seconds",
+            default=10.0,
+        ),
     )
 
 

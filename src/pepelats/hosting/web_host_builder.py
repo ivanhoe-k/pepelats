@@ -48,7 +48,11 @@ HostLifespan = Callable[[Starlette], AbstractAsyncContextManager[None]]
 
 class WebHostBuilder:
     def __init__(self, *, config_dir: Path) -> None:
-        bootstrap = load_host_bootstrap(load_configuration(config_dir))
+        loaded = load_configuration(config_dir)
+        bootstrap = load_host_bootstrap(
+            loaded.configuration,
+            environment=loaded.environment,
+        )
         self._configuration = bootstrap.configuration
         self._service_config = bootstrap.service_config
         self._environment = bootstrap.environment

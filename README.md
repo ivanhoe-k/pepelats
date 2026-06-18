@@ -2,7 +2,7 @@
   <img src="docs/img/logo.png" alt="Pepelats" width="480">
 </p>
 <p align="center">
-  <em>Opinionated framework for async web services in Python — compose on a fluent builder with DI, configuration, observability, and lifecycle built in.</em>
+  <em>Small Opinionated framework for async web services in Python — compose on a fluent builder with DI, configuration, observability, and lifecycle built in.</em>
 </p>
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.13+-3776AB?logo=python&logoColor=white" alt="Python">
@@ -19,7 +19,7 @@ Apps compose on `WebHostBuilder` or `FastAPIHostBuilder`: register services, mou
 
 - Compose and run an async web service from a single builder
 - Inject services and configuration into handlers and constructors
-- Load typed settings from TOML and environment variables
+- Load typed settings from TOML or JSON with environment overlays
 - Structured logging, tracing, and metrics
 - Run background work alongside the HTTP server
 - Optional FastAPI for REST APIs and OpenAPI (`pepelats[fastapi]`)
@@ -33,41 +33,61 @@ uv add "pepelats[fastapi]"
 
 ## Configuration
 
-Pass a `config_dir` to the builder. Pepelats loads `appsettings.toml` from that directory (and merges `appsettings.local.toml` when present). Set the active environment with the `ENVIRONMENT` variable (defaults to `default`).
+Pass a `config_dir` to the builder. Pepelats loads, in order:
+
+1. `appsettings.toml` or `appsettings.json` (required)
+2. `appsettings.{Environment}.*` when present
+3. `.env`, then process environment variables (highest priority)
+
+The environment name comes from `ENVIRONMENT`, the `environment` key in the base file, or defaults to `Local`. That name selects the overlay file (e.g. `appsettings.Staging.toml`).
 
 `config/appsettings.toml`:
 
 ```toml
-[default]
-environment = "local"
+environment = "Local"
 
-[default.service]
+[service]
 service_name = "my-service"
 service_version = "1.0.0"
 
-[default.logging]
+[logging]
 log_level = "INFO"
 sinks = ["console"]
 
-[default.logging.console]
+[logging.console]
 json_logs = false
 
-[default.host]
+[host]
 bind = "127.0.0.1"
 port = 8000
 
-[default.observability]
+[observability]
 enabled = false
 otlp_endpoint = ""
 
-[default.greeting]
+[greeting]
 punctuation = "!"
 shout = false
 ```
 
-`service`, `logging`, `host`, and `observability` are required for host bootstrap. `enabled` is the OTLP export switch: `false` runs local-only (console/file logs, no collector); `true` requires a non-empty `otlp_endpoint` (an empty one is a config error, not a silent opt-out). `export_timeout_seconds` (default `3`) caps every OTLP export, including the final flush on shutdown — so an unreachable collector can't stall teardown. The flush runs to completion before the process exits, so shutdown leaves no straggling export logs.
+Overlay example (`config/appsettings.Staging.toml`):
 
-App-specific sections bind to Pydantic models. The section name defaults to the model name in snake_case (`GreetingConfig` → `greeting`). Register with `add_configuration`; services receive the config through constructor injection:
+```toml
+[host]
+port = 8080
+```
+
+Environment variables override file values. Nested keys use `__`:
+
+```bash
+ENVIRONMENT=Production
+HOST__PORT=9001
+LOGGING__LOG_LEVEL=DEBUG
+```
+
+Host bootstrap requires `[service]`, `[logging]`, `[host]`, and `[observability]`. Set `observability.enabled = true` only with a non-empty `otlp_endpoint`.
+
+App settings use Pydantic models registered with `add_configuration`. By default, `{Name}Config` maps to a `[name]` section in snake_case (`LoggingConfig` → `logging`, `MessageBusConfig` → `message_bus`). This works when each word is PascalCase with a single leading capital. Otherwise, pass `section=` to set the section name yourself.
 
 ```python
 from pydantic import BaseModel

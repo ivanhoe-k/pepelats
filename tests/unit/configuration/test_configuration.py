@@ -8,6 +8,8 @@ from pepelats.configuration.configuration import (
     ConfigurationError,
     DynaconfConfiguration,
 )
+from pepelats.hosting.server_config import ServerConfig
+from pepelats.observability.logging_config import LoggingConfig
 
 
 class DatabaseConfig(BaseModel):
@@ -112,6 +114,62 @@ def test_get_section_dict_coerces_to_dict() -> None:
     )
 
     assert configuration.get_section_dict("service") == {"name": "socia"}
+
+
+def test_get_preserves_dict_data_keys_while_binding_structural_fields() -> None:
+    configuration = DynaconfConfiguration(
+        FakeSettings(
+            {
+                "logging": {
+                    "log_level": "INFO",
+                    "overrides": {
+                        "MyApp.Worker": "DEBUG",
+                        "Uvicorn.Access": "ERROR",
+                    },
+                }
+            }
+        )
+    )
+
+    logging = configuration.get(LoggingConfig, section="logging")
+
+    assert logging.overrides == {
+        "MyApp.Worker": "DEBUG",
+        "Uvicorn.Access": "ERROR",
+    }
+
+
+def test_get_section_dict_preserves_dict_data_keys() -> None:
+    configuration = DynaconfConfiguration(
+        FakeSettings(
+            {
+                "logging": {
+                    "overrides": {
+                        "MyApp.Worker": "DEBUG",
+                        "Uvicorn.Access": "ERROR",
+                    }
+                }
+            }
+        )
+    )
+
+    section = configuration.get_section_dict("logging")
+
+    assert section["overrides"] == {
+        "MyApp.Worker": "DEBUG",
+        "Uvicorn.Access": "ERROR",
+    }
+
+
+def test_get_binds_dynaconf_uppercase_structural_field_names() -> None:
+    configuration = DynaconfConfiguration(
+        FakeSettings({"host": {"PORT": 9001, "bind": "127.0.0.1"}})
+    )
+
+    server = configuration.get(ServerConfig, section="host")
+
+    assert server.port == 9001
+    assert server.bind == "127.0.0.1"
 
 
 def test_get_section_dict_raises_for_missing_section() -> None:
