@@ -4,10 +4,8 @@ import pytest
 from doubles import FakeSettings
 from pydantic import BaseModel, ValidationError
 
-from pepelats.configuration.configuration import (
-    ConfigurationError,
-    DynaconfConfiguration,
-)
+from pepelats.configuration import ConfigurationError
+from pepelats.configuration.configuration import DynaconfConfiguration
 from pepelats.hosting.server_config import ServerConfig
 from pepelats.observability.logging_config import LoggingConfig
 

@@ -6,7 +6,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from pepelats.hosting import WebHostBuilder, request_services
+from pepelats.hosting import HostPipeline, WebHostBuilder, request_services
 from pepelats.hosting.web_host import WebHost
 from pepelats.observability import get_logger, span
 
@@ -19,9 +19,13 @@ async def hello(request: Request) -> JSONResponse:
     return JSONResponse({"status": "ok"})
 
 
+def _configure_pipeline(pipeline: HostPipeline) -> None:
+    pipeline.map(Route("/hello", hello))
+
+
 def build_host(config_dir: Path) -> WebHost:
     return (
         WebHostBuilder.create(config_dir=config_dir)
-        .configure_pipeline(lambda pipeline: pipeline.map(Route("/hello", hello)))
+        .configure_pipeline(_configure_pipeline)
         .build()
     )

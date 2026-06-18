@@ -8,7 +8,7 @@ in logging.overrides) are data, not schema, and are left unchanged.
 from __future__ import annotations
 
 import types
-from typing import Annotated, Any, Union, get_args, get_origin
+from typing import Annotated, Any, Union, cast, get_args, get_origin
 
 from pydantic import BaseModel
 
@@ -37,7 +37,7 @@ def read_section_field[T](
         if isinstance(key, str) and key.lower() == field_name.lower():
             coerced = _coerce_field_value(value, field_info.annotation)
             validated = model.model_validate({field_name: coerced})
-            return getattr(validated, field_name)
+            return cast(T, getattr(validated, field_name))
 
     return default
 

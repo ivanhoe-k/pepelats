@@ -11,7 +11,7 @@ from starlette.routing import Route
 
 from pepelats.configuration import Configuration
 from pepelats.dependency_injection import ServiceCollection
-from pepelats.hosting import WebHostBuilder, request_services
+from pepelats.hosting import HostPipeline, WebHostBuilder, request_services
 from pepelats.hosting.background_service import BackgroundService
 from pepelats.hosting.web_host import WebHost
 
@@ -48,10 +48,14 @@ async def status(request: Request) -> JSONResponse:
     return JSONResponse(worker_status.snapshot())
 
 
+def _configure_pipeline(pipeline: HostPipeline) -> None:
+    pipeline.map(Route("/status", status))
+
+
 def build_host(config_dir: Path) -> WebHost:
     return (
         WebHostBuilder.create(config_dir=config_dir)
         .configure_services(register)
-        .configure_pipeline(lambda pipeline: pipeline.map(Route("/status", status)))
+        .configure_pipeline(_configure_pipeline)
         .build()
     )

@@ -14,7 +14,7 @@ from examples.shared.greeting import (
     User,
     register,
 )
-from pepelats.hosting import WebHostBuilder, request_services
+from pepelats.hosting import HostPipeline, WebHostBuilder, request_services
 from pepelats.hosting.web_host import WebHost
 from pepelats.observability import get_logger, span
 
@@ -42,10 +42,14 @@ async def greet(request: Request) -> JSONResponse:
     return JSONResponse({"message": message, "count": count})
 
 
+def _configure_pipeline(pipeline: HostPipeline) -> None:
+    pipeline.map(Route("/greet/{name}", greet))
+
+
 def build_host(config_dir: Path) -> WebHost:
     return (
         WebHostBuilder.create(config_dir=config_dir)
         .configure_services(register)
-        .configure_pipeline(lambda pipeline: pipeline.map(Route("/greet/{name}", greet)))
+        .configure_pipeline(_configure_pipeline)
         .build()
     )
