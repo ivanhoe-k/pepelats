@@ -119,127 +119,25 @@ def register(services: ServiceCollection, configuration: Configuration) -> None:
 
 ## Examples
 
-Runnable full versions: `tests/examples/di_showcase_generic.py` (Starlette) and `tests/examples/di_showcase.py` (FastAPI).
+Runnable apps live under [`examples/`](examples/). Each folder has a short README and a `main.py` you can run from the repo root:
 
-### Generic host
-
-```python
-from pathlib import Path
-
-from pydantic import BaseModel
-from starlette.requests import Request
-from starlette.responses import JSONResponse
-from starlette.routing import Route
-
-from pepelats.configuration import Configuration
-from pepelats.dependency_injection import ServiceCollection
-from pepelats.hosting import HostPipeline, WebHostBuilder, request_services
-from pepelats.hosting.web_host import WebHost
-
-
-class GreetingConfig(BaseModel):
-    punctuation: str
-    shout: bool
-
-
-class HealthService:
-    def __init__(self, config: GreetingConfig) -> None:
-        self._config = config
-
-    def status(self) -> str:
-        message = "ok"
-        if self._config.shout:
-            message = message.upper()
-        return message + self._config.punctuation
-
-
-async def health(request: Request) -> JSONResponse:
-    services = request_services(request)
-    service = await services.get(HealthService)
-    return JSONResponse({"status": service.status()})
-
-
-def register(services: ServiceCollection, configuration: Configuration) -> None:
-    services.add_configuration(GreetingConfig)
-    services.add_singleton(HealthService)
-
-
-def map_routes(pipeline: HostPipeline) -> None:
-    pipeline.map(Route("/health", health))
-
-
-def build_host(config_dir: Path) -> WebHost:
-    return (
-        WebHostBuilder.create(config_dir=config_dir)
-        .configure_services(register)
-        .configure_pipeline(map_routes)
-        .build()
-    )
-
-
-if __name__ == "__main__":
-    build_host(Path("config")).run()
+```bash
+uv run python examples/starlette-basic/main.py
+uv run python examples/fastapi-basic/main.py
+uv run python examples/background-worker/main.py
+uv run python examples/observability/main.py
 ```
 
-### FastAPI
+| Example | What it shows |
+|---------|----------------|
+| `starlette-basic/` | Generic host, manual DI with `request_services` |
+| `fastapi-basic/` | FastAPI host, `Inject[T]` on routes |
+| `background-worker/` | `BackgroundService` with a status route |
+| `observability/` | Structured logging and spans on a request |
 
-```python
-from pathlib import Path
+Shared wiring for the greeting examples is in `examples/shared/`. Smoke tests: `tests/example_smoke/`.
 
-from fastapi import APIRouter, FastAPI
-from pydantic import BaseModel
-
-from pepelats.configuration import Configuration
-from pepelats.dependency_injection import Inject, ServiceCollection
-from pepelats.hosting.web_host import WebHost
-from pepelats.integrations.fastapi import FastAPIHostBuilder, InjectRoute
-
-
-class GreetingConfig(BaseModel):
-    punctuation: str
-    shout: bool
-
-
-class HealthService:
-    def __init__(self, config: GreetingConfig) -> None:
-        self._config = config
-
-    def status(self) -> str:
-        message = "ok"
-        if self._config.shout:
-            message = message.upper()
-        return message + self._config.punctuation
-
-
-router = APIRouter(route_class=InjectRoute)
-
-
-@router.get("/health")
-async def health(service: Inject[HealthService]) -> dict[str, str]:
-    return {"status": service.status()}
-
-
-def register(services: ServiceCollection, configuration: Configuration) -> None:
-    services.add_configuration(GreetingConfig)
-    services.add_singleton(HealthService)
-
-
-def configure_api(app: FastAPI) -> None:
-    app.include_router(router)
-
-
-def build_host(config_dir: Path) -> WebHost:
-    return (
-        FastAPIHostBuilder.create(config_dir=config_dir)
-        .configure_services(register)
-        .configure_api(configure_api)
-        .build()
-    )
-
-
-if __name__ == "__main__":
-    build_host(Path("config")).run()
-```
+See [examples/README.md](examples/README.md) for per-example notes.
 
 ## Dependencies
 

@@ -1,18 +1,16 @@
-"""Exercises di_showcase_generic: same dependency shapes resolve on the generic host."""
+"""Smoke test for examples/fastapi-basic."""
 
 from pathlib import Path
 
 import pytest
+from examples.shared.fastapi_host import build_host
 from starlette.testclient import TestClient
-
-from examples.di_showcase import write_config
-from examples.di_showcase_generic import build_host
 
 pytestmark = pytest.mark.smoke
 
 
-def test_route_resolves_every_dependency_shape(tmp_path: Path) -> None:
-    host = build_host(write_config(tmp_path))
+def test_route_resolves_every_dependency_shape(fastapi_config_dir: Path) -> None:
+    host = build_host(fastapi_config_dir)
 
     with TestClient(host.app) as client:
         first = client.get("/greet/ada").json()

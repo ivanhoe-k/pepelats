@@ -44,7 +44,7 @@ packages = ["src/pepelats"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-pythonpath = ["tests"]
+pythonpath = [".", "tests"]
 addopts = "-m 'not perf'"
 markers = [
   "smoke: minimal boots-and-serves subset of the integration suite",
@@ -59,7 +59,7 @@ exclude = "(\\.venv|build|dist)"
 [tool.ruff]
 line-length = 88
 target-version = "py313"
-src = ["src"]
+src = ["src", "examples"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
@@ -70,7 +70,7 @@ python_version = "3.13"
 strict = true
 disallow_untyped_decorators = false
 warn_unused_configs = true
-mypy_path = ["src", "tests"]
+mypy_path = ["src", "tests", "."]
 explicit_package_bases = true
 namespace_packages = true
 

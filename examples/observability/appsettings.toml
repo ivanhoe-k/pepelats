@@ -1,0 +1,18 @@
+[service]
+service_name = "observability-example"
+service_version = "1.0.0"
+
+[logging]
+log_level = "INFO"
+sinks = ["console"]
+
+[logging.console]
+json_logs = false
+
+[host]
+bind = "127.0.0.1"
+port = 8099
+
+[observability]
+enabled = false
+otlp_endpoint = ""
